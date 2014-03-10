@@ -1,0 +1,10 @@
+https://developers.facebook.com/docs/android/getting-started
+
+http://developer.android.com/guide/topics/connectivity/bluetooth.html
+https://developers.facebook.com/docs/android/scrumptious/show-friends
+
+http://stackoverflow.com/questions/7103186/how-to-test-bluetooth-application-on-emulators-in-android
+http://stackoverflow.com/questions/5885438/bluetooth-pairing-without-user-confirmation
+
+https://developers.facebook.com/docs/android/graph/
+
