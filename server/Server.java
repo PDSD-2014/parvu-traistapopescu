@@ -72,6 +72,7 @@ public class Server extends Thread {
               fbid = fbid;
 
               connected.put(request.fbid, out);
+
               break;
             }
             case DataRequest.MESSAGE: {
@@ -86,6 +87,26 @@ public class Server extends Thread {
                 sout.writeObject(request);
                 sout.flush();
               }
+
+              break;
+            }
+            case DataRequest.MEETING: {
+              MeetingRequest meeting = (MeetingRequest)request;
+              System.out.println("Meeting from " + meeting.users);
+
+              StringTokenizer st = new StringTokenizer(meeting.users, " [,]");
+
+              for (; st.hasMoreTokens(); ) {
+                String user = st.nextToken();
+
+                if (connected.get(user) != null) {
+                  ObjectOutputStream sout = connected.get(user);
+
+                  sout.writeObject(new MessageRequest("SERVER", user, "intalnire!"));
+                  sout.flush();
+                }
+              }
+              break;
             }
           }
         } catch (IOException ex) {
