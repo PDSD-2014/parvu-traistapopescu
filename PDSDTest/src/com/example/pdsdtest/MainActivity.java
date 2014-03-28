@@ -17,7 +17,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -35,13 +34,16 @@ public class MainActivity extends Activity {
     String fbid;
     HashSet<String> selectedFriends = new HashSet<String>();
 	
+    GraphUser me;
+    
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+		Backend.activity = this;
 		// start Facebook Login
-		  Session.openActiveSession(this, true, new Session.StatusCallback() {
+		Session.openActiveSession(this, true, new Session.StatusCallback() {
 	
 		    // callback when session changes state
 		    @Override
@@ -57,7 +59,9 @@ public class MainActivity extends Activity {
 		    		  public void onCompleted(GraphUser user, Response response) {
 		    			  Log.d("mydebug", "aici");
 		    			  if (user != null) {
-		    				  TextView welcome = (TextView) findViewById(R.id.welcome);
+		    				  me = user;
+		    				  
+		    				  TextView welcome = (TextView)findViewById(R.id.welcome);
 		    				  welcome.setText("Hello " + user.getId() + "!");
 		    				  
 		    				  MainActivity.this.connect(user.getId());
@@ -88,12 +92,14 @@ public class MainActivity extends Activity {
 		public void run() {
 			try {
 				Log.d("mydebug", "pai nu " + fbid);
-				socket = new Socket("192.168.2.9", 10000);
+				socket = new Socket("169.254.179.214", 10000);
 				
 				Log.d("mydebug", "aici nu prea");
 				out = new ObjectOutputStream(socket.getOutputStream());
 			    in = new ObjectInputStream(socket.getInputStream());
 		
+			    (new Backend(out, in)).start();
+			    
 			    DataRequest request = new DataRequest(DataRequest.CONNECT, fbid);
 			    out.writeObject(request);
 			    out.flush();
@@ -118,26 +124,6 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	private class ServerMessages extends Thread {
-		public void run() {
-			try {
-				while (true) {
-			    	DataRequest request = (DataRequest)in.readObject();
-			    	
-			    	switch (request.type) {
-			    		case DataRequest.MESSAGE:
-			    			Log.d("mydebug", ((MessageRequest)request).msg + " from " + ((MessageRequest)request).fbid);
-			    			break;
-			    	}
-			    }
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			} catch (ClassNotFoundException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
-	
 	private class SendMeeting extends Thread {
 		String friends;
 		
@@ -154,19 +140,6 @@ public class MainActivity extends Activity {
 			} catch (IOException ex) {
 				ex.printStackTrace();
 			}
-		}
-	}
-	
-	private class User {
-		private String id, name;
-		
-		User(String id, String name) {
-			this.id = id;
-			this.name = name;
-		}
-		
-		public String toString() {
-			return name;
 		}
 	}
 	
@@ -197,9 +170,12 @@ public class MainActivity extends Activity {
                 Response response) {
 			int i = 0;
 			  
+			Backend.allFriends.put(fbid, me);
         	for (GraphUser u : users) {
         		Log.d("mydebug", u.getId());
         		i++;
+        		
+        		Backend.allFriends.put(u.getId(), u);
         		
         		usersArray.add(new User(u.getId(), u.getName()));
         		if (i == 10) {
@@ -218,6 +194,7 @@ public class MainActivity extends Activity {
 		Log.d("mydebug", "ce naiba");
 		
 		this.fbid = fbid;
+		Backend.fbid = fbid;
 		
 		Request friendRequest = Request.newMyFriendsRequest(Session.getActiveSession(),
             new MyGraphUserCallback());
@@ -226,8 +203,7 @@ public class MainActivity extends Activity {
         params.putString("fields", "id, name");
         friendRequest.setParameters(params);
         friendRequest.executeAsync();
-        
-        
+             
         try {
         	Connect c = new Connect(fbid);
         	c.start();
@@ -237,7 +213,7 @@ public class MainActivity extends Activity {
         	ex.printStackTrace();
         }
 		
-		(new ServerMessages()).start();
+//		(new ServerMessages()).start();
 	}
 	
 	@Override
