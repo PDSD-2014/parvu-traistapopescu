@@ -102,7 +102,7 @@ public class Server extends Thread {
                 if (connected.get(user) != null) {
                   ObjectOutputStream sout = connected.get(user);
 
-                  sout.writeObject(new MessageRequest("SERVER", user, "intalnire!"));
+                  sout.writeObject(meeting);
                   sout.flush();
                 }
               }
