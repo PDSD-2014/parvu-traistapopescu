@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,13 +19,11 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import com.facebook.Request;
 import com.facebook.Request.GraphUserListCallback;
 import com.facebook.Response;
 import com.facebook.Session;
-import com.facebook.SessionState;
 import com.facebook.model.GraphUser;
 
 public class MainActivity extends Activity {
@@ -43,34 +42,58 @@ public class MainActivity extends Activity {
 		
 		Backend.activity = this;
 		// start Facebook Login
-		Session.openActiveSession(this, true, new Session.StatusCallback() {
-	
-		    // callback when session changes state
-		    @Override
-		    public void call(Session session, SessionState state, Exception exception) {
-		    	Log.d("mydebug", "aici1");
-		    	if (session.isOpened()) {
-		    		// make request to the /me API
-		    		Log.d("mydebug", "aici2");
-		    		Request.newMeRequest(session, new Request.GraphUserCallback() {
+//		Session.openActiveSession(this, true, new Session.StatusCallback() {
+//	
+//		    // callback when session changes state
+//		    @Override
+//		    public void call(Session session, SessionState state, Exception exception) {
+//		    	Log.d("mydebug", "aici1");
+//		    	if (session.isOpened()) {
+//		    		// make request to the /me API
+//		    		Log.d("mydebug", "aici2");
+//		    		Request.newMeRequest(session, new Request.GraphUserCallback() {
+//
+//		    		  // callback after Graph API response with user object
+//		    		  @Override
+//		    		  public void onCompleted(GraphUser user, Response response) {
+//		    			  Log.d("mydebug", "aici");
+//		    			  if (user != null) {
+//		    				  me = user;
+//		    				  
+//		    				  TextView welcome = (TextView)findViewById(R.id.welcome);
+//		    				  welcome.setText("Hello " + user.getId() + "!");
+//		    				  
+//		    				  MainActivity.this.connect(user.getId());
+//		    			  }
+//		    		  }
+//		    		}).executeAsync();
+//		    	}
+//		    }
+//		  });
 
-		    		  // callback after Graph API response with user object
-		    		  @Override
-		    		  public void onCompleted(GraphUser user, Response response) {
-		    			  Log.d("mydebug", "aici");
-		    			  if (user != null) {
-		    				  me = user;
-		    				  
-		    				  TextView welcome = (TextView)findViewById(R.id.welcome);
-		    				  welcome.setText("Hello " + user.getId() + "!");
-		    				  
-		    				  MainActivity.this.connect(user.getId());
-		    			  }
-		    		  }
-		    		}).executeAsync();
-		    	}
+		  Bluetooth b = new Bluetooth(this);
+		  (new Thread() {
+		    public void run() {
+		      try {
+		        Bluetooth.enableBluetooth();
+		        
+		        Log.d("mydebug", "aici");
+		        Bluetooth.discoverDevices();
+		        
+		        Thread.sleep(5000);
+		        Log.d("mydebug", "aici2");
+		        for (DeviceInfo dinfo : Bluetooth.getDevices()) {
+              Log.d("mydebug", dinfo.getDeviceName());
+            }
+		        
+		        for (BluetoothDevice dinfo : Bluetooth.getPairedDevices()) {
+		          Log.d("mydebug", dinfo.getName());
+		        }
+		      } catch (Exception ex) {
+		        ex.printStackTrace();
+		      }
 		    }
-		  });
+		  }).start();
 	}
 
 	public void logout(View v) {
@@ -92,7 +115,7 @@ public class MainActivity extends Activity {
 		public void run() {
 			try {
 				Log.d("mydebug", "pai nu " + fbid);
-				socket = new Socket("169.254.179.214", 10000);
+				socket = new Socket("172.18.100.78", 10000);
 				
 				Log.d("mydebug", "aici nu prea");
 				out = new ObjectOutputStream(socket.getOutputStream());
@@ -226,7 +249,8 @@ public class MainActivity extends Activity {
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 	  super.onActivityResult(requestCode, resultCode, data);
-	  Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
+	  // check this
+//	  Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
 	}
 
 }

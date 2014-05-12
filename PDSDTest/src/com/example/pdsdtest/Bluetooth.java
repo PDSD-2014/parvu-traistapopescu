@@ -1,8 +1,9 @@
-package com.example.bluetoothofficial;
+package com.example.pdsdtest;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import android.app.Activity;
@@ -13,6 +14,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
 import android.widget.Toast;
 
 class ExceptionHandler extends Exception {
@@ -52,8 +54,8 @@ class DeviceInfo {
 public class Bluetooth {
 	private static Activity activity;
 	private static BluetoothAdapter ba;
-	private static HashSet<BluetoothDevice> pairedDevices;
-	private static HashSet<DeviceInfo> devices;
+	private static Set<BluetoothDevice> pairedDevices;
+	private static Set<DeviceInfo> devices;
 	private static final String uuidString = "2e87ecc1-5e85-42f1-9955-5788c93598ec";
 	private static final UUID uuid = UUID.fromString(uuidString);
 	private static BluetoothSocket bs;
@@ -85,9 +87,10 @@ public class Bluetooth {
 		ba.disable();
 	}
 	
-	public static HashSet<BluetoothDevice> getPairedDevices(){
-		pairedDevices = (HashSet<BluetoothDevice>) ba.getBondedDevices();
+	public static Set<BluetoothDevice> getPairedDevices(){
+		pairedDevices = ba.getBondedDevices();
 		
+		Log.d("mydebug", "get paired");
 		for( BluetoothDevice bd: pairedDevices ){
 			devices.add(new DeviceInfo( bd.getName(), bd.getAddress()));
 		}
@@ -97,14 +100,15 @@ public class Bluetooth {
 	static BroadcastReceiver br = new BroadcastReceiver(){
 		@Override
 		public void onReceive(Context context, Intent intent) {
+		  Log.d("mydebug", "received");
 			// TODO Auto-generated method stub
 			String a = intent.getAction();
 			// Discover a device
-			if(BluetoothDevice.ACTION_FOUND.equals(a)){
+//			if(BluetoothDevice.ACTION_FOUND.equals(a)){
 				BluetoothDevice dev = intent.getParcelableExtra(
 						BluetoothDevice.EXTRA_DEVICE);
 				devices.add(new DeviceInfo(dev.getName(), dev.getAddress()));
-			}
+//			}
 		}
 		
 	};
@@ -122,7 +126,7 @@ public class Bluetooth {
 		
 	}
 	
-	public static HashSet<DeviceInfo> getDevices(){
+	public static Set<DeviceInfo> getDevices(){
 		return devices;
 	}
 	
@@ -130,12 +134,10 @@ public class Bluetooth {
 		private  BluetoothSocket socket;
 		private BluetoothDevice device;
 		
-		public Connect(final BluetoothDevice device, BluetoothSocket socket) 
+		public Connect(final BluetoothDevice device) 
 				throws IOException{
 			this.device = device;
-			this.socket = socket;
-			BluetoothSocket temp = null;
-			temp = device.createRfcommSocketToServiceRecord(uuid);
+			BluetoothSocket temp = device.createRfcommSocketToServiceRecord(uuid);
 			this.socket = temp;
 		}
 		
@@ -166,7 +168,7 @@ public class Bluetooth {
 	}
 	
 	public static void connectToDevice(BluetoothDevice device) throws IOException{
-		Thread connectThread = new Thread(new Bluetooth.Connect(device, bs));
+		Thread connectThread = new Thread(new Bluetooth.Connect(device));
 		connectThread.start();
 	}
 	
