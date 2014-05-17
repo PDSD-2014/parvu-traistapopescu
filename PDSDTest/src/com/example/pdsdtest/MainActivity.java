@@ -85,7 +85,8 @@ public class MainActivity extends Activity {
 		        for (BluetoothDevice dinfo : Bluetooth.getDevices()) {
               Log.d("mydebug", dinfo.getName());
             }
-		        
+		       
+		        Bluetooth.accept();
 		        for (BluetoothDevice dinfo : Bluetooth.getPairedDevices()) {
 		          Log.d("mydebug", dinfo.getName());
 		          

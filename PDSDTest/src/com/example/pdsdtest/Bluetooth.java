@@ -9,6 +9,7 @@ import java.util.UUID;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -57,6 +58,7 @@ public class Bluetooth {
 	private static Set<BluetoothDevice> pairedDevices;
 	private static Set<BluetoothDevice> devices;
 	private static final String uuidString = "2e87ecc1-5e85-42f1-9955-5788c93598ec";
+	private static String serviceName = "pdsdtest";
 	private static final UUID uuid = UUID.fromString(uuidString);
 	private static BluetoothSocket bs;
 	private static OutputStream os;
@@ -132,6 +134,71 @@ public class Bluetooth {
 		return devices;
 	}
 	
+	
+	public static void accept(){
+		try {
+		    (new AcceptThread()).start();
+		  } catch (Exception ex) {
+		    ex.printStackTrace();
+		  }
+	}
+	
+	private static class AcceptThread extends Thread {
+	    private final BluetoothServerSocket mmServerSocket;
+	 
+	    public AcceptThread() {
+	        // Use a temporary object that is later assigned to mmServerSocket,
+	        // because mmServerSocket is final
+	        BluetoothServerSocket tmp = null;
+	        try {
+	            // MY_UUID is the app's UUID string, also used by the client code
+	        	Log.d("mydebug", "Accepta");
+	            tmp = ba.listenUsingRfcommWithServiceRecord(serviceName, uuid);
+	        } catch (IOException e) { 
+	        	System.out.println(e.getStackTrace());
+	        }
+	        mmServerSocket = tmp;
+	    }
+	 
+	    public void run() {
+	        BluetoothSocket socket = null;
+	        // Keep listening until exception occurs or a socket is returned
+	        while (true) {
+	            try {
+	                socket = mmServerSocket.accept();
+	                Log.d("mydebug", "Socket acceptat");
+	            } catch (IOException e) {
+	                break;
+	            }
+	            // If a connection was accepted
+	            if (socket != null) {
+	                // Do work to manage the connection (in a separate thread)
+	                Log.d("mydebug", "S-a conectat");
+	                try {
+	                	mmServerSocket.close();
+	                } catch(Exception e){
+	                	System.out.println(e.getStackTrace());
+	                }
+	                break;
+	            }
+	        }
+	    }
+	 
+	    /** Will cancel the listening socket, and cause the thread to finish */
+	    public void cancel() {
+	        try {
+	            mmServerSocket.close();
+	        } catch (IOException e) { }
+	    }
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	public static void connect(BluetoothDevice d) {
 	  try {
 	    (new Connect(d)).start();
@@ -149,7 +216,7 @@ public class Bluetooth {
 			this.device = device;
 //			BluetoothSocket temp = device.createRfcommSocketToServiceRecord(uuid);
 			BluetoothDevice actual = ba.getRemoteDevice(device.getAddress());
-			BluetoothSocket temp = actual.createInsecureRfcommSocketToServiceRecord(uuid);
+			BluetoothSocket temp = actual.createRfcommSocketToServiceRecord(uuid);
 			this.socket = temp;
 		}
 		
