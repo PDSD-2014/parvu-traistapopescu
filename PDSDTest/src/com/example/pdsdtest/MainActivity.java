@@ -86,16 +86,9 @@ public class MainActivity extends Activity {
               Log.d("mydebug", dinfo.getName());
             }
 		        
-		        for (BluetoothDevice dinfo : b.getPairedDevices()) {
-		          Log.d("mydebug", dinfo.getName());
-		          
-		          if (dinfo.getName().compareTo("GT-I8190") == 0) {
-                Log.d("mydebug", "trying to connect");
-//                String uuid = intent.getStringExtra(BluetoothDevice.EXTRA);
-//                Log.d("mydebug", uuid);
-                b.connect(dinfo);
-              }
-		        }
+		        b.accept("100000403313303");
+
+		        b.start();
 		      } catch (Exception ex) {
 		        ex.printStackTrace();
 		      }

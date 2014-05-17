@@ -10,6 +10,7 @@ import java.util.UUID;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -26,7 +27,7 @@ class ExceptionHandler extends Exception {
 	}
 }
 
-public class Bluetooth {
+public class Bluetooth extends Thread {
 	private Activity activity;
 	private BluetoothAdapter ba;
 	private Set<BluetoothDevice> pairedDevices;
@@ -36,11 +37,11 @@ public class Bluetooth {
 	private BluetoothSocket bs;
 	private OutputStream os;
 	
-	private Meeting meeting;
+	private Meeting meeting = null;
 	
 	public Bluetooth(final Activity activity) {
 		this.activity = activity;
-		ba = BluetoothAdapter.getDefaultAdapter();
+  	ba = BluetoothAdapter.getDefaultAdapter();
 		pairedDevices = new HashSet<BluetoothDevice>();
 		devices = new HashSet<BluetoothDevice>();
 	}
@@ -109,14 +110,57 @@ public class Bluetooth {
 		return devices;
 	}
 	
+	public void accept(String fbid) {
+		try {
+	    (new AcceptThread(fbid)).start();
+	  } catch (Exception ex) {
+	    ex.printStackTrace();
+	  }
+	}
+	
+	private class AcceptThread extends Thread {
+    private BluetoothServerSocket mmServerSocket;
+    private final String fbid;
+    public AcceptThread(String fbid) {
+      this.fbid = fbid;
+      try {
+        // MY_UUID is the app's UUID string, also used by the client code
+      	Log.d("mydebug", "Accepta");
+        mmServerSocket = ba.listenUsingRfcommWithServiceRecord("pdsdapp", uuid);
+      } catch (IOException e) { 
+        System.out.println(e.getStackTrace());
+      }
+    }
+	 
+    public void run() {
+      while (true) {
+        try {
+          final BluetoothSocket socket = mmServerSocket.accept();
+          Log.d("mydebug", "Socket acceptat");
+          
+          (new Thread() {
+            public void run() {
+              try {
+                OutputStream os = socket.getOutputStream();
+                os.write(fbid.getBytes());
+              } catch (IOException ex) {}
+            }
+          }).start();
+        } catch (IOException e) {}
+      }
+    }
+	}
+	
 	public void run() {
 	  try {
   	  while (true) {
     	  for (BluetoothDevice d : getPairedDevices()) {
     	    try {
     	      String user = connect(d);
-    	      
-    	      meeting.deleteEntry(user);
+//    	      Log.d("mydebug", "connect to " + d.getName());
+    	      if (meeting != null) {
+    	        meeting.deleteEntry(user);
+    	      }
     	    } catch (Exception ex) {
     	      Log.d("mydebug", "could not connect to " + d.getName());
     	    }
@@ -147,90 +191,5 @@ public class Bluetooth {
 	  }
     
     return new String(buf, 0, n);
-	}
-	
-	private class Connect extends Thread {
-		private  BluetoothSocket socket;
-		private BluetoothDevice device;
-		
-		public Connect(final BluetoothDevice device) 
-				throws IOException{
-			this.device = device;
-//			BluetoothSocket temp = device.createRfcommSocketToServiceRecord(uuid);
-//			socket = ba.getRemoteDevice(device.getAddress());
-//			socket = 
-			
-//			if (socket == null) {
-//			  Log.d()
-//			}
-		}
-		
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			ba.cancelDiscovery();
-			
-			try{
-				socket.connect();
-				Log.d("mydebug", "s-a acceptat");
-				
-        InputStream in = socket.getInputStream();
-        
-        byte[] buf = new byte[100];
-        
-        int x = in.read(buf);
-        
-        Log.d("mydebug", "a venit " + new String(buf, 0, x));
-			} catch(Exception e){
-//				System.out.println(e.getLocalizedMessage());
-			  e.printStackTrace();
-//				try {
-//					socket.close();
-//				} catch(Exception ex){
-////					System.out.println(ex.getLocalizedMessage());
-//				  ex.printStackTrace();
-//				}
-			}
-		}
-		
-		public void closeSocket(){
-			try{
-				socket.close();
-			} catch(Exception e){
-				System.out.println(e.getLocalizedMessage());
-			}
-		}
-	}
-	
-	private class Send implements Runnable {
-		BluetoothSocket socket;
-		byte[] message;
-		
-		public Send(BluetoothSocket socket, byte[] message) {
-			this.socket = socket;
-			this.message = message;
-			os = null;
-			
-			try {
-				os = socket.getOutputStream();
-			} catch(Exception e){
-				System.out.println(e.getLocalizedMessage());
-			}
-		}
-
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			try{
-				os.write(message);
-			} catch(Exception e){
-				System.out.println(e.getLocalizedMessage());
-				try {
-					os.close();
-				} catch(Exception ex){
-					System.out.println(ex.getLocalizedMessage());
-				}
-			}
-		}
 	}
 }
