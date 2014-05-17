@@ -90,6 +90,12 @@ public class Meeting extends Activity {
 		}
 	}
 	
+	public void deleteEntry(String fbid) {
+	  usersArray.remove(fbid);
+	  
+	  adapter.notifyDataSetChanged();
+	}
+	
 	public void addMessage(String fbid, String msg) {
 		
 		Log.d("mydebug", "aici");

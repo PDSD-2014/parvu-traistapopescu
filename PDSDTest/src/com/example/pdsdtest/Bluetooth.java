@@ -1,6 +1,7 @@
 package com.example.pdsdtest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,69 +26,45 @@ class ExceptionHandler extends Exception {
 	}
 }
 
-class DeviceInfo {
-	private String deviceName;
-	private String deviceMAC;
-	
-	public DeviceInfo(String deviceName, String deviceMAC){
-		this.deviceName = deviceName;
-		this.deviceMAC = deviceMAC;
-	}
-	
-	public String getDeviceName(){
-		return deviceName;
-	}
-	
-	public String getDeviceMAC(){
-		return deviceMAC;
-	}
-	
-	public void setDeviceName(String deviceName){
-		this.deviceName = deviceName;
-	}
-	
-	public void setDeviceMAC(String deviceMAC){
-		this.deviceMAC = deviceMAC;
-	}
-}
-
 public class Bluetooth {
-	private static Activity activity;
-	private static BluetoothAdapter ba;
-	private static Set<BluetoothDevice> pairedDevices;
-	private static Set<BluetoothDevice> devices;
-	private static final String uuidString = "2e87ecc1-5e85-42f1-9955-5788c93598ec";
-	private static final UUID uuid = UUID.fromString(uuidString);
-	private static BluetoothSocket bs;
-	private static OutputStream os;
+	private Activity activity;
+	private BluetoothAdapter ba;
+	private Set<BluetoothDevice> pairedDevices;
+	private Set<BluetoothDevice> devices;
+	private final String uuidString = "2e87ecc1-5e85-42f1-9955-5788c93598ec";
+	private final UUID uuid = UUID.fromString(uuidString);
+	private BluetoothSocket bs;
+	private OutputStream os;
 	
-	public Bluetooth(final Activity activity){
-		Bluetooth.activity = activity;
+	private Meeting meeting;
+	
+	public Bluetooth(final Activity activity) {
+		this.activity = activity;
 		ba = BluetoothAdapter.getDefaultAdapter();
 		pairedDevices = new HashSet<BluetoothDevice>();
 		devices = new HashSet<BluetoothDevice>();
 	}
 	
-	public static void enableBluetooth() throws ExceptionHandler{
+	public void enableBluetooth() throws ExceptionHandler {
 		// Device does not support Bluetooth
-		if( ba == null ){
+		if (ba == null) {
 			Toast.makeText(activity.getApplicationContext(), "The device does" +
 					"not support Bluetooth", Toast.LENGTH_LONG).show();
 			throw new ExceptionHandler("The device does not support Bluetooth");
 		}
 		
 		// Enable bluetooth
-		if( ba.isEnabled() == false){
+		if (ba.isEnabled() == false) {
 			Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 			activity.startActivityForResult(intent, 1);
 		}
 	}
-	
-	public static void disableBluetooth(){
+
+	public void disableBluetooth(){
 		ba.disable();
 	}
 	
-	public static Set<BluetoothDevice> getPairedDevices(){
+	public Set<BluetoothDevice> getPairedDevices(){
 		pairedDevices = ba.getBondedDevices();
 		
 		Log.d("mydebug", "get paired");
@@ -98,7 +75,7 @@ public class Bluetooth {
 		return pairedDevices;
 	}
 	
-	static BroadcastReceiver br = new BroadcastReceiver(){
+	BroadcastReceiver br = new BroadcastReceiver(){
 		@Override
 		public void onReceive(Context context, Intent intent) {
 		  Log.d("mydebug", "received");
@@ -116,11 +93,11 @@ public class Bluetooth {
 	};
 	
 	// Unregister se face in onDestroy
-	public static void unregister(){
+	public void unregister() {
 		activity.unregisterReceiver(br);
 	}
 	
-	public static void discoverDevices(){
+	public void discoverDevices(){
 		devices.clear();
 		ba.startDiscovery();
 		activity.registerReceiver(br, new IntentFilter(
@@ -128,19 +105,51 @@ public class Bluetooth {
 		
 	}
 	
-	public static Set<BluetoothDevice> getDevices(){
+	public Set<BluetoothDevice> getDevices(){
 		return devices;
 	}
 	
-	public static void connect(BluetoothDevice d) {
+	public void run() {
 	  try {
-	    (new Connect(d)).start();
+  	  while (true) {
+    	  for (BluetoothDevice d : getPairedDevices()) {
+    	    try {
+    	      String user = connect(d);
+    	      
+    	      meeting.deleteEntry(user);
+    	    } catch (Exception ex) {
+    	      Log.d("mydebug", "could not connect to " + d.getName());
+    	    }
+    	  }
+    	  
+    	  Thread.sleep(5000);
+  	  }
 	  } catch (Exception ex) {
 	    ex.printStackTrace();
 	  }
 	}
 	
-	private static class Connect extends Thread {
+	public String connect(BluetoothDevice device) throws IOException {
+	  BluetoothSocket socket = device.createRfcommSocketToServiceRecord(uuid);
+	  byte[] buf = new byte[100];
+	  int n = 0;
+	  
+	  socket.connect();
+	  
+	  try {
+  	  InputStream in = socket.getInputStream();
+      
+      n = in.read(buf);
+      
+      socket.close();
+	  } catch (IOException ex) {
+	    ex.printStackTrace();
+	  }
+    
+    return new String(buf, 0, n);
+	}
+	
+	private class Connect extends Thread {
 		private  BluetoothSocket socket;
 		private BluetoothDevice device;
 		
@@ -148,9 +157,12 @@ public class Bluetooth {
 				throws IOException{
 			this.device = device;
 //			BluetoothSocket temp = device.createRfcommSocketToServiceRecord(uuid);
-			BluetoothDevice actual = ba.getRemoteDevice(device.getAddress());
-			BluetoothSocket temp = actual.createInsecureRfcommSocketToServiceRecord(uuid);
-			this.socket = temp;
+//			socket = ba.getRemoteDevice(device.getAddress());
+//			socket = 
+			
+//			if (socket == null) {
+//			  Log.d()
+//			}
 		}
 		
 		@Override
@@ -160,15 +172,24 @@ public class Bluetooth {
 			
 			try{
 				socket.connect();
+				Log.d("mydebug", "s-a acceptat");
+				
+        InputStream in = socket.getInputStream();
+        
+        byte[] buf = new byte[100];
+        
+        int x = in.read(buf);
+        
+        Log.d("mydebug", "a venit " + new String(buf, 0, x));
 			} catch(Exception e){
 //				System.out.println(e.getLocalizedMessage());
 			  e.printStackTrace();
-				try {
-					socket.close();
-				} catch(Exception ex){
-//					System.out.println(ex.getLocalizedMessage());
-				  ex.printStackTrace();
-				}
+//				try {
+//					socket.close();
+//				} catch(Exception ex){
+////					System.out.println(ex.getLocalizedMessage());
+//				  ex.printStackTrace();
+//				}
 			}
 		}
 		
@@ -181,21 +202,16 @@ public class Bluetooth {
 		}
 	}
 	
-	public static void connectToDevice(BluetoothDevice device) throws IOException{
-		Thread connectThread = new Thread(new Bluetooth.Connect(device));
-		connectThread.start();
-	}
-	
-	private static class Send implements Runnable{
+	private class Send implements Runnable {
 		BluetoothSocket socket;
 		byte[] message;
 		
-		public Send(BluetoothSocket socket, byte[] message){
+		public Send(BluetoothSocket socket, byte[] message) {
 			this.socket = socket;
 			this.message = message;
 			os = null;
 			
-			try{
+			try {
 				os = socket.getOutputStream();
 			} catch(Exception e){
 				System.out.println(e.getLocalizedMessage());
@@ -216,9 +232,5 @@ public class Bluetooth {
 				}
 			}
 		}
-	}
-	
-	public static void sendMessage(String message){
-		Thread send = new Thread(new Bluetooth.Send(bs, message.getBytes()));
 	}
 }

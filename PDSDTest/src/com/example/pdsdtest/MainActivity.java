@@ -71,27 +71,29 @@ public class MainActivity extends Activity {
 //		    }
 //		  });
 
-		  Bluetooth b = new Bluetooth(this);
+		  final Bluetooth b = new Bluetooth(this);
 		  (new Thread() {
 		    public void run() {
 		      try {
-		        Bluetooth.enableBluetooth();
+		        b.enableBluetooth();
 		        
 		        Log.d("mydebug", "aici");
-		        Bluetooth.discoverDevices();
+		        b.discoverDevices();
 		        
 		        Thread.sleep(5000);
 		        Log.d("mydebug", "aici2");
-		        for (BluetoothDevice dinfo : Bluetooth.getDevices()) {
+		        for (BluetoothDevice dinfo : b.getDevices()) {
               Log.d("mydebug", dinfo.getName());
             }
 		        
-		        for (BluetoothDevice dinfo : Bluetooth.getPairedDevices()) {
+		        for (BluetoothDevice dinfo : b.getPairedDevices()) {
 		          Log.d("mydebug", dinfo.getName());
 		          
 		          if (dinfo.getName().compareTo("GT-I8190") == 0) {
                 Log.d("mydebug", "trying to connect");
-                Bluetooth.connect(dinfo);
+//                String uuid = intent.getStringExtra(BluetoothDevice.EXTRA);
+//                Log.d("mydebug", uuid);
+                b.connect(dinfo);
               }
 		        }
 		      } catch (Exception ex) {
