@@ -55,7 +55,7 @@ public class Bluetooth {
 	private static Activity activity;
 	private static BluetoothAdapter ba;
 	private static Set<BluetoothDevice> pairedDevices;
-	private static Set<DeviceInfo> devices;
+	private static Set<BluetoothDevice> devices;
 	private static final String uuidString = "2e87ecc1-5e85-42f1-9955-5788c93598ec";
 	private static final UUID uuid = UUID.fromString(uuidString);
 	private static BluetoothSocket bs;
@@ -65,7 +65,7 @@ public class Bluetooth {
 		Bluetooth.activity = activity;
 		ba = BluetoothAdapter.getDefaultAdapter();
 		pairedDevices = new HashSet<BluetoothDevice>();
-		devices = new HashSet<DeviceInfo>();
+		devices = new HashSet<BluetoothDevice>();
 	}
 	
 	public static void enableBluetooth() throws ExceptionHandler{
@@ -91,8 +91,9 @@ public class Bluetooth {
 		pairedDevices = ba.getBondedDevices();
 		
 		Log.d("mydebug", "get paired");
-		for( BluetoothDevice bd: pairedDevices ){
-			devices.add(new DeviceInfo( bd.getName(), bd.getAddress()));
+		for (BluetoothDevice bd : pairedDevices){
+//			devices.add(new DeviceInfo( bd.getName(), bd.getAddress()));
+		  devices.add(bd);
 		}
 		return pairedDevices;
 	}
@@ -102,12 +103,13 @@ public class Bluetooth {
 		public void onReceive(Context context, Intent intent) {
 		  Log.d("mydebug", "received");
 			// TODO Auto-generated method stub
-			String a = intent.getAction();
+			String a = intent.getAction(); // vezi ce face asta
 			// Discover a device
 //			if(BluetoothDevice.ACTION_FOUND.equals(a)){
 				BluetoothDevice dev = intent.getParcelableExtra(
 						BluetoothDevice.EXTRA_DEVICE);
-				devices.add(new DeviceInfo(dev.getName(), dev.getAddress()));
+//				devices.add(new DeviceInfo(dev.getName(), dev.getAddress()));
+				devices.add(dev);
 //			}
 		}
 		
@@ -126,18 +128,28 @@ public class Bluetooth {
 		
 	}
 	
-	public static Set<DeviceInfo> getDevices(){
+	public static Set<BluetoothDevice> getDevices(){
 		return devices;
 	}
 	
-	private static class Connect implements Runnable {
+	public static void connect(BluetoothDevice d) {
+	  try {
+	    (new Connect(d)).start();
+	  } catch (Exception ex) {
+	    ex.printStackTrace();
+	  }
+	}
+	
+	private static class Connect extends Thread {
 		private  BluetoothSocket socket;
 		private BluetoothDevice device;
 		
 		public Connect(final BluetoothDevice device) 
 				throws IOException{
 			this.device = device;
-			BluetoothSocket temp = device.createRfcommSocketToServiceRecord(uuid);
+//			BluetoothSocket temp = device.createRfcommSocketToServiceRecord(uuid);
+			BluetoothDevice actual = ba.getRemoteDevice(device.getAddress());
+			BluetoothSocket temp = actual.createInsecureRfcommSocketToServiceRecord(uuid);
 			this.socket = temp;
 		}
 		
@@ -149,11 +161,13 @@ public class Bluetooth {
 			try{
 				socket.connect();
 			} catch(Exception e){
-				System.out.println(e.getLocalizedMessage());
+//				System.out.println(e.getLocalizedMessage());
+			  e.printStackTrace();
 				try {
 					socket.close();
 				} catch(Exception ex){
-					System.out.println(ex.getLocalizedMessage());
+//					System.out.println(ex.getLocalizedMessage());
+				  ex.printStackTrace();
 				}
 			}
 		}

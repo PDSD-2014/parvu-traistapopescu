@@ -82,12 +82,17 @@ public class MainActivity extends Activity {
 		        
 		        Thread.sleep(5000);
 		        Log.d("mydebug", "aici2");
-		        for (DeviceInfo dinfo : Bluetooth.getDevices()) {
-              Log.d("mydebug", dinfo.getDeviceName());
+		        for (BluetoothDevice dinfo : Bluetooth.getDevices()) {
+              Log.d("mydebug", dinfo.getName());
             }
 		        
 		        for (BluetoothDevice dinfo : Bluetooth.getPairedDevices()) {
 		          Log.d("mydebug", dinfo.getName());
+		          
+		          if (dinfo.getName().compareTo("GT-I8190") == 0) {
+                Log.d("mydebug", "trying to connect");
+                Bluetooth.connect(dinfo);
+              }
 		        }
 		      } catch (Exception ex) {
 		        ex.printStackTrace();
