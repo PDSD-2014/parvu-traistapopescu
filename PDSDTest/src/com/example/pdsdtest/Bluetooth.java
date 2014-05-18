@@ -159,7 +159,8 @@ public class Bluetooth extends Thread {
     	      String user = connect(d);
 //    	      Log.d("mydebug", "connect to " + d.getName());
     	      if (meeting != null) {
-    	        meeting.deleteEntry(user);
+//    	        meeting.deleteEntry(user);
+    	        Log.d("mydebug", "deleting " + user);
     	      }
     	    } catch (Exception ex) {
     	      Log.d("mydebug", "could not connect to " + d.getName());

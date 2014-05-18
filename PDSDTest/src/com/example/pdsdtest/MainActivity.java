@@ -112,6 +112,12 @@ public class MainActivity extends Activity {
 		
 		public Connect(String fbid) {
 			this.fbid = fbid;
+			
+			final Bluetooth b = new Bluetooth(MainActivity.this);
+//			b.discoverDevices();
+			b.accept(fbid);
+			
+			b.start();
 		}
 		
 		public void run() {
