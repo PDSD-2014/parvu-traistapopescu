@@ -29,239 +29,204 @@ import com.facebook.SessionState;
 import com.facebook.model.GraphUser;
 
 public class MainActivity extends Activity {
-	private Socket socket;
-	ObjectOutputStream out;
-    ObjectInputStream in;
-    String fbid;
-    HashSet<String> selectedFriends = new HashSet<String>();
-	
-    GraphUser me;
-    
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		
-		Backend.activity = this;
-		// start Facebook Login
-		Session.openActiveSession(this, true, new Session.StatusCallback() {
-	
-		    // callback when session changes state
-		    @Override
-		    public void call(Session session, SessionState state, Exception exception) {
-		    	Log.d("mydebug", "aici1");
-		    	if (session.isOpened()) {
-		    		// make request to the /me API
-		    		Log.d("mydebug", "aici2");
-		    		Request.newMeRequest(session, new Request.GraphUserCallback() {
+  private Socket socket;
+  ObjectOutputStream out;
+  ObjectInputStream in;
+  String fbid;
+  HashSet<String> selectedFriends = new HashSet<String>();
 
-		    		  // callback after Graph API response with user object
-		    		  @Override
-		    		  public void onCompleted(GraphUser user, Response response) {
-		    			  Log.d("mydebug", "aici");
-		    			  if (user != null) {
-		    				  me = user;
-		    				  
-		    				  TextView welcome = (TextView)findViewById(R.id.welcome);
-		    				  welcome.setText("Hello " + user.getId() + "!");
-		    				  
-		    				  MainActivity.this.connect(user.getId());
-		    			  }
-		    		  }
-		    		}).executeAsync();
-		    	}
-		    }
-		  });
+  GraphUser me;
 
-//		  final Bluetooth b = new Bluetooth(this);
-//		  (new Thread() {
-//		    public void run() {
-//		      try {
-//		        b.enableBluetooth();
-//		        
-//		        Log.d("mydebug", "aici");
-//		        b.discoverDevices();
-//		        
-//		        Thread.sleep(5000);
-//		        Log.d("mydebug", "aici2");
-//		        for (BluetoothDevice dinfo : b.getDevices()) {
-//              Log.d("mydebug", dinfo.getName());
-//            }
-//		        
-//		        b.accept("100000403313303");
-//
-//		        b.start();
-//		      } catch (Exception ex) {
-//		        ex.printStackTrace();
-//		      }
-//		    }
-//		  }).start();
-	}
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
 
-	public void logout(View v) {
-		if (Session.getActiveSession() != null) {
-		    Session.getActiveSession().closeAndClearTokenInformation();
-		    Log.d("mydebug", "sa zicem");
-		}
+    Backend.activity = this;
+    // start Facebook Login
+    Session.openActiveSession(this, true, new Session.StatusCallback() {
 
-		Session.setActiveSession(null);
-	}
-	
-	private class Connect extends Thread {
-		private String fbid;
-		
-		public Connect(String fbid) {
-			this.fbid = fbid;
-			
-			final Bluetooth b = new Bluetooth(MainActivity.this);
-//			b.discoverDevices();
-			b.accept(fbid);
-			
-			b.start();
-		}
-		
-		public void run() {
-			try {
-				Log.d("mydebug", "pai nu " + fbid);
-				socket = new Socket("169.254.239.214", 10000);
-				
-				Log.d("mydebug", "aici nu prea");
-				out = new ObjectOutputStream(socket.getOutputStream());
-			    in = new ObjectInputStream(socket.getInputStream());
-		
-			    (new Backend(out, in)).start();
-			    
-			    DataRequest request = new DataRequest(DataRequest.CONNECT, fbid);
-			    out.writeObject(request);
-			    out.flush();
-			    
-//			    out.writeObject(new MessageRequest(fbid, fbid, "ce mai faci?"));
-//			    out.flush();
-			    
-			    Log.d("mydebug", "ok");
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
-	
-	public void sendMeeting(View view) {
-		try {
-			SendMeeting meeting = new SendMeeting(selectedFriends.toString());
-			meeting.start();
-			meeting.join();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-	}
-	
-	private class SendMeeting extends Thread {
-		String friends;
-		
-		public SendMeeting(String friends) {
-			this.friends = friends;
-		}
-		
-		public void run() {
-			try {
-				out.writeObject(new MeetingRequest(fbid, friends));
-				out.flush();
-				
-				Log.d("mydebug", "am trimis meeting");
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
-	
-	private class MyGraphUserCallback implements GraphUserListCallback {
-		ArrayList<User> usersArray = new ArrayList<User>();
-		ListView listView = (ListView)findViewById(R.id.listView1);
-		
-		public MyGraphUserCallback() {
-			listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-			
-			selectedFriends.add(fbid);
-			
-        	listView.setOnItemClickListener(new OnItemClickListener() {
-        		public void onItemClick(AdapterView<?> parent, View view,
-        			    int position, long id) {
-        			String friend = usersArray.get(position).id;
-        			if (selectedFriends.contains(friend) == true) {
-        				selectedFriends.remove(friend);
-        			} else {
-        				selectedFriends.add(friend);
-        				Log.d("mydebug", "am adaugat " + usersArray.get(position).name);
-        			}
-        		}
-        	});
-		}
-		
-		public void onCompleted(List<GraphUser> users,
-                Response response) {
-			int i = 0;
-			  
-			Backend.allFriends.put(fbid, me);
-			
-    	for (GraphUser u : users) {
-//    		Log.d("mydebug", u.getId());
-    		i++;
-    		
-    		Backend.allFriends.put(u.getId(), u);
-    		
-    		usersArray.add(new User(u.getId(), u.getName()));
-//    		if (i == 10) {
-//    			break;
-//    		}
-    	}
-    	
-    	Collections.sort(usersArray);
-    	
-    	ArrayAdapter<User> adapter = new ArrayAdapter<User>(MainActivity.this, 
-    	        android.R.layout.simple_list_item_multiple_choice, usersArray);
-    	
-    	listView.setAdapter(adapter);
-		}
-	}
-	
-	private void connect(String fbid) {
-		Log.d("mydebug", "ce naiba");
-		
-		this.fbid = fbid;
-		Backend.fbid = fbid;
-		
-		Request friendRequest = Request.newMyFriendsRequest(Session.getActiveSession(),
-            new MyGraphUserCallback());
-		
-        Bundle params = new Bundle();
-        params.putString("fields", "id, name");
-        friendRequest.setParameters(params);
-        friendRequest.executeAsync();
-             
-        try {
-        	Connect c = new Connect(fbid);
-        	c.start();
-		
-        	c.join();
-        } catch (Exception ex) {
-        	ex.printStackTrace();
+      // callback when session changes state
+      @Override
+      public void call(Session session, SessionState state, Exception exception) {
+        Log.d("mydebug", "aici1");
+        if (session.isOpened()) {
+          // make request to the /me API
+          Log.d("mydebug", "aici2");
+          Request.newMeRequest(session, new Request.GraphUserCallback() {
+
+            // callback after Graph API response with user object
+            @Override
+            public void onCompleted(GraphUser user, Response response) {
+              Log.d("mydebug", "aici");
+              if (user != null) {
+                me = user;
+
+                TextView welcome = (TextView)findViewById(R.id.welcome);
+                welcome.setText("Hello " + user.getId() + "!");
+
+                MainActivity.this.connect(user.getId());
+              }
+            }
+          }).executeAsync();
         }
-		
-//		(new ServerMessages()).start();
-	}
-	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
-	
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-	  super.onActivityResult(requestCode, resultCode, data);
-	  // check this must do this
-	  Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
-	}
+      }
+    });
+  }
+
+  public void logout(View v) {
+    if (Session.getActiveSession() != null) {
+      Session.getActiveSession().closeAndClearTokenInformation();
+    }
+
+    Session.setActiveSession(null);
+  }
+
+  private class Connect extends Thread {
+    private String fbid;
+
+    public Connect(String fbid) {
+      this.fbid = fbid;
+
+      // start accepting and probing for devices
+      final Bluetooth b = new Bluetooth(MainActivity.this);
+      b.accept(fbid);
+
+      b.start();
+    }
+
+    public void run() {
+      try {
+        socket = new Socket("192.168.2.4", 10000);
+
+        out = new ObjectOutputStream(socket.getOutputStream());
+        in = new ObjectInputStream(socket.getInputStream());
+
+        (new Backend(out, in)).start();
+
+        // send connect request to server
+        DataRequest request = new DataRequest(DataRequest.CONNECT, fbid);
+        out.writeObject(request);
+        out.flush();
+
+        Log.d("mydebug", "ok");
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
+
+  public void sendMeeting(View view) {
+    try {
+      SendMeeting meeting = new SendMeeting(selectedFriends.toString());
+      meeting.start();
+      meeting.join();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private class SendMeeting extends Thread {
+    String friends;
+
+    public SendMeeting(String friends) {
+      this.friends = friends;
+    }
+
+    public void run() {
+      try {
+        // send meeting request to server
+        out.writeObject(new MeetingRequest(fbid, friends));
+        out.flush();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
+
+  private class MyGraphUserCallback implements GraphUserListCallback {
+    ArrayList<User> usersArray = new ArrayList<User>();
+    ListView listView = (ListView)findViewById(R.id.listView1);
+
+    public MyGraphUserCallback() {
+      listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+      selectedFriends.add(fbid);
+
+      listView.setOnItemClickListener(new OnItemClickListener() {
+        public void onItemClick(AdapterView<?> parent, View view,
+          int position, long id) {
+          String friend = usersArray.get(position).id;
+
+          // Add selected friends to list for meeting creation
+          if (selectedFriends.contains(friend) == true) {
+            selectedFriends.remove(friend);
+          } else {
+            selectedFriends.add(friend);
+          }
+        }
+      });
+    }
+
+    public void onCompleted(List<GraphUser> users,
+        Response response) {
+      int i = 0;
+
+      Backend.allFriends.put(fbid, me);
+
+      // get all Facebook friends
+      for (GraphUser u : users) {
+        Backend.allFriends.put(u.getId(), u);
+
+        usersArray.add(new User(u.getId(), u.getName()));
+      }
+
+      // sort them and create list to show
+      Collections.sort(usersArray);
+
+      ArrayAdapter<User> adapter = new ArrayAdapter<User>(MainActivity.this,
+          android.R.layout.simple_list_item_multiple_choice, usersArray);
+
+      listView.setAdapter(adapter);
+    }
+  }
+
+  private void connect(String fbid) {
+    Log.d("mydebug", "ce naiba");
+
+    this.fbid = fbid;
+    Backend.fbid = fbid;
+
+    // Request all friends from Facebook
+    Request friendRequest = Request.newMyFriendsRequest(Session.getActiveSession(),
+        new MyGraphUserCallback());
+
+    Bundle params = new Bundle();
+    params.putString("fields", "id, name");
+    friendRequest.setParameters(params);
+    friendRequest.executeAsync();
+
+    try {
+      Connect c = new Connect(fbid);
+      c.start();
+
+      c.join();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    return true;
+  }
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    // check this must do this
+    Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
+  }
 
 }
