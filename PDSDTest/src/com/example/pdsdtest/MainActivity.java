@@ -204,7 +204,7 @@ public class MainActivity extends Activity {
 			Backend.allFriends.put(fbid, me);
 			
     	for (GraphUser u : users) {
-    		Log.d("mydebug", u.getId());
+//    		Log.d("mydebug", u.getId());
     		i++;
     		
     		Backend.allFriends.put(u.getId(), u);

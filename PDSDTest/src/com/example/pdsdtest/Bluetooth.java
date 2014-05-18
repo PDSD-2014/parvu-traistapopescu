@@ -37,7 +37,7 @@ public class Bluetooth extends Thread {
 	private BluetoothSocket bs;
 	private OutputStream os;
 	
-	private Meeting meeting = null;
+	public static Meeting meeting = null;
 	
 	public Bluetooth(final Activity activity) {
 		this.activity = activity;
@@ -56,8 +56,8 @@ public class Bluetooth extends Thread {
 		
 		// Enable bluetooth
 		if (ba.isEnabled() == false) {
-			Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-			activity.startActivityForResult(intent, 1);
+//			Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+//			activity.startActivityForResult(intent, 1);
 		}
 	}
 
@@ -135,6 +135,10 @@ public class Bluetooth extends Thread {
     public void run() {
       while (true) {
         try {
+          if (ba.isEnabled() == false) {
+            Thread.sleep(5000);
+          }
+          
           final BluetoothSocket socket = mmServerSocket.accept();
           Log.d("mydebug", "Socket acceptat");
           
@@ -143,10 +147,11 @@ public class Bluetooth extends Thread {
               try {
                 OutputStream os = socket.getOutputStream();
                 os.write(fbid.getBytes());
+                os.flush();
               } catch (IOException ex) {}
             }
           }).start();
-        } catch (IOException e) {}
+        } catch (Exception e) {}
       }
     }
 	}
@@ -154,18 +159,21 @@ public class Bluetooth extends Thread {
 	public void run() {
 	  try {
   	  while (true) {
-    	  for (BluetoothDevice d : getPairedDevices()) {
-    	    try {
-    	      String user = connect(d);
-//    	      Log.d("mydebug", "connect to " + d.getName());
-    	      if (meeting != null) {
-//    	        meeting.deleteEntry(user);
-    	        Log.d("mydebug", "deleting " + user);
-    	      }
-    	    } catch (Exception ex) {
-    	      Log.d("mydebug", "could not connect to " + d.getName());
-    	    }
-    	  }
+  	    if (ba.isEnabled()) {
+      	  for (BluetoothDevice d : getPairedDevices()) {
+      	    try {
+      	      String user = connect(d);
+  //    	      Log.d("mydebug", "connect to " + d.getName());
+      	      Log.d("mydebug", "deleting " + user);
+      	      if (meeting != null) {
+      	        meeting.deleteEntry(user);
+      	        Log.d("mydebug", "deleting " + user);
+      	      }
+      	    } catch (Exception ex) {
+      	      Log.d("mydebug", "could not connect to " + d.getName());
+      	    }
+      	  }
+  	    }
     	  
     	  Thread.sleep(5000);
   	  }

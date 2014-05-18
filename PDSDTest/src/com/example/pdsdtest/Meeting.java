@@ -1,6 +1,7 @@
 package com.example.pdsdtest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import android.app.Activity;
@@ -19,6 +20,8 @@ import com.facebook.model.GraphUser;
 
 public class Meeting extends Activity {
 	ArrayList<User> usersArray = new ArrayList<User>();
+	HashMap<String, User> meetingUsers = new HashMap<String, User>();
+	
 	ArrayAdapter<User> adapter;
 	
 	/** Called when the activity is first created. */
@@ -28,6 +31,7 @@ public class Meeting extends Activity {
 	    setContentView(R.layout.meeting);
 	
 	    Backend.meeting = this;
+	    Bluetooth.meeting = this;
 	    
 	    TextView v = (TextView)findViewById(R.id.meetingName);
 	    
@@ -43,7 +47,10 @@ public class Meeting extends Activity {
 	    	GraphUser u = Backend.allFriends.get(st.nextToken());
 	    	
 	    	if (u != null) {
-	    		usersArray.add(new User(u.getId(), u.getName()));
+	    	  User curUser = new User(u.getId(), u.getName());
+	    	  meetingUsers.put(u.getId(), curUser);
+	    	  
+	    		usersArray.add(curUser);
 	    	}
 	    }
 	    
@@ -91,7 +98,9 @@ public class Meeting extends Activity {
 	}
 	
 	public void deleteEntry(String fbid) {
-	  usersArray.remove(fbid);
+	  Log.d("mydebug", "in meeting delete " + fbid);
+	  boolean ok = usersArray.remove(meetingUsers.get(fbid));
+	  Log.d("mydebug", "ok " + ok);
 	  
 	  adapter.notifyDataSetChanged();
 	}
