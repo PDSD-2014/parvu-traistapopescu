@@ -1,6 +1,6 @@
 package com.example.pdsdtest;
 
-public class User {
+public class User implements Comparable<User> {
 	public String id, name, status;
 	
 	User(String id, String name) {
@@ -11,5 +11,9 @@ public class User {
 	
 	public String toString() {
 		return name;
+	}
+	
+	public int compareTo(User other) {
+	  return name.compareTo(other.name);
 	}
 }
