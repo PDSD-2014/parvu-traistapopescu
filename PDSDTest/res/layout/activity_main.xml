@@ -26,16 +26,16 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"
-        android:text="@string/hello_world" />
+        android:text="Connecting..." />
 
     <Button
         android:id="@+id/button1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/welcome"
         android:layout_below="@+id/welcome"
-        android:layout_marginTop="39dp"
-        android:text="Send Meeting"
-        android:onClick="sendMeeting" />
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="38dp"
+        android:onClick="sendMeeting"
+        android:text="Send Meeting" />
 
 </RelativeLayout>
