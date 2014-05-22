@@ -11,6 +11,7 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -34,6 +35,7 @@ public class MainActivity extends Activity {
   ObjectInputStream in;
   String fbid;
   HashSet<String> selectedFriends = new HashSet<String>();
+  ArrayList<User> usersArray = new ArrayList<User>();
 
   GraphUser me;
 
@@ -41,6 +43,8 @@ public class MainActivity extends Activity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
     Backend.activity = this;
     // start Facebook Login
@@ -63,9 +67,9 @@ public class MainActivity extends Activity {
                 me = user;
 
                 TextView welcome = (TextView)findViewById(R.id.welcome);
-                welcome.setText("Hello " + user.getId() + "!");
+                welcome.setText("Hello " + user.getName() + "!");
 
-                MainActivity.this.connect(user.getId());
+                connect(me.getId());
               }
             }
           }).executeAsync();
@@ -83,6 +87,8 @@ public class MainActivity extends Activity {
   }
 
   private class Connect extends Thread {
+    final private String IP = "169.254.239.214";
+    final private int PORT = 10000;
     private String fbid;
 
     public Connect(String fbid) {
@@ -90,6 +96,7 @@ public class MainActivity extends Activity {
 
       // start accepting and probing for devices
       final Bluetooth b = new Bluetooth(MainActivity.this);
+      
       b.accept(fbid);
 
       b.start();
@@ -97,7 +104,7 @@ public class MainActivity extends Activity {
 
     public void run() {
       try {
-        socket = new Socket("192.168.2.4", 10000);
+        socket = new Socket(IP, PORT);
 
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
@@ -145,7 +152,6 @@ public class MainActivity extends Activity {
   }
 
   private class MyGraphUserCallback implements GraphUserListCallback {
-    ArrayList<User> usersArray = new ArrayList<User>();
     ListView listView = (ListView)findViewById(R.id.listView1);
 
     public MyGraphUserCallback() {
@@ -170,9 +176,7 @@ public class MainActivity extends Activity {
 
     public void onCompleted(List<GraphUser> users,
         Response response) {
-      int i = 0;
-
-      Backend.allFriends.put(fbid, me);
+//      Backend.allFriends.put(fbid, me);
 
       // get all Facebook friends
       for (GraphUser u : users) {
@@ -188,12 +192,18 @@ public class MainActivity extends Activity {
           android.R.layout.simple_list_item_multiple_choice, usersArray);
 
       listView.setAdapter(adapter);
+      try {
+        Connect c = new Connect(fbid);
+        c.start();
+
+        c.join();
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
     }
   }
 
   private void connect(String fbid) {
-    Log.d("mydebug", "ce naiba");
-
     this.fbid = fbid;
     Backend.fbid = fbid;
 
@@ -205,15 +215,14 @@ public class MainActivity extends Activity {
     params.putString("fields", "id, name");
     friendRequest.setParameters(params);
     friendRequest.executeAsync();
+  }
 
-    try {
-      Connect c = new Connect(fbid);
-      c.start();
-
-      c.join();
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
+  @Override
+  public void onSaveInstanceState(Bundle state) {
+    super.onSaveInstanceState(state);
+    
+    state.putString("fbid", fbid);
+//    state.putStringArray("friends", (String[])usersArray.toArray());
   }
 
   @Override

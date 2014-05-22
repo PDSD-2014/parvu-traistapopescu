@@ -30,7 +30,7 @@ class ExceptionHandler extends Exception {
 public class Bluetooth extends Thread {
   private Activity activity;
   private BluetoothAdapter ba;
-  private Set<BluetoothDevice> pairedDevices;
+  private Set<BluetoothDevice> pairedDevices = null;
   private Set<BluetoothDevice> devices;
   private final String uuidString = "2e87ecc1-5e85-42f1-9955-5788c93598ec";
   private final UUID uuid = UUID.fromString(uuidString);
@@ -65,13 +65,13 @@ public class Bluetooth extends Thread {
     ba.disable();
   }
 
-  public Set<BluetoothDevice> getPairedDevices(){
+  public Set<BluetoothDevice> getPairedDevices() {
     pairedDevices = ba.getBondedDevices();
 
-    Log.d("mydebug", "get paired");
-    for (BluetoothDevice bd : pairedDevices){
-      devices.add(bd);
-    }
+//    for (BluetoothDevice bd : pairedDevices){
+//      devices.add(bd);
+//      Log.d("mydebug", bd.getName());
+//    }
 
     return pairedDevices;
   }
@@ -120,24 +120,32 @@ public class Bluetooth extends Thread {
   private class AcceptThread extends Thread {
     private BluetoothServerSocket mmServerSocket;
     private final String fbid;
+    private boolean isEnabled = false;
     public AcceptThread(String fbid) {
       this.fbid = fbid;
-      try {
-        Log.d("mydebug", "Accepta");
-        mmServerSocket = ba.listenUsingRfcommWithServiceRecord("pdsdapp", uuid);
-      } catch (IOException e) { 
-        System.out.println(e.getStackTrace());
-      }
+//      try {
+//        Log.d("mydebug", "Accepta");
+//      } catch (IOException e) { 
+//        System.out.println(e.getStackTrace());
+//      }
     }
 
     public void run() {
       while (true) {
         try {
+          Log.d("mydebug", "trying");
           if (ba.isEnabled() == false) {
+            isEnabled = false;
             // Wait for bluetooth to be enabled - for testing purposes
             Thread.sleep(5000);
+          } else {
+            if (isEnabled == false) {
+              isEnabled = true;
+              mmServerSocket = ba.listenUsingRfcommWithServiceRecord("pdsdapp", uuid);
+            }
           }
 
+          Log.d("mydebug", "Waiting");
           final BluetoothSocket socket = mmServerSocket.accept();
           Log.d("mydebug", "Socket acceptat");
 

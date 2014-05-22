@@ -77,11 +77,14 @@ public class Backend extends Thread {
         while (true) {
           DataRequest request = (DataRequest)in.readObject();
 
+          Log.d("mydebug", "cacat");
+          System.out.println("fuuu");
           switch (request.type) {
             case DataRequest.MEETING:
               Intent i = new Intent(activity, Meeting.class);
               Bundle b = new Bundle();
 
+              Log.d("mydebug", "meeting " + ((MeetingRequest)request).users);
               b.putString("users", ((MeetingRequest)request).users);
 
               // Start meeting activity
