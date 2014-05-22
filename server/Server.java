@@ -9,14 +9,13 @@ import javax.net.*;
 import java.awt.image.*;
 import javax.imageio.*;
 
-// import java.nio.file.*;
-
 import com.example.pdsdtest.*;
 
 public class Server extends Thread {
   private ServerSocket serverSocket;
   private ExecutorService pool = Executors.newCachedThreadPool();
   private HashMap<String, ObjectOutputStream> connected = new HashMap<String, ObjectOutputStream>();
+  private HashMap<String, LinkedList<DataRequest>> pendingMessages = new HashMap<>();
 
   public static void main(String[] args) {
     (new Server()).run();
@@ -27,7 +26,7 @@ public class Server extends Thread {
       serverSocket = ServerSocketFactory.getDefault().createServerSocket(10000);
 
       if (serverSocket == null) {
-        System.out.println("Nu e bine\n");
+        System.out.println("Bad socket!");
       }
     } catch (IOException ex) {
       ex.printStackTrace();
@@ -39,7 +38,7 @@ public class Server extends Thread {
       try {
         Socket s = serverSocket.accept();
 
-        System.out.println("Am primit ceva ok");
+        System.out.println("New connection...");
         pool.execute(new ClientThread(s));
       } catch (IOException ex) {}
     }
@@ -61,6 +60,13 @@ public class Server extends Thread {
       } catch (IOException ex) {}
     }
 
+    private void addToWaitQueue(DataRequest msg, String user) {      
+      if (pendingMessages.get(user) == null) {
+        pendingMessages.put(user, new LinkedList<DataRequest>());
+      }
+      pendingMessages.get(user).add(msg);
+    }
+
     public void run() {
       while (true) {
         try {
@@ -68,24 +74,41 @@ public class Server extends Thread {
 
           switch (request.type) {
             case DataRequest.CONNECT: {
-              System.out.println("Yes, first message " + request.fbid);
-              fbid = fbid;
+              System.out.println("Connected " + request.fbid);
+              fbid = request.fbid;
 
               connected.put(request.fbid, out);
 
+              if (pendingMessages.get(fbid) != null) {
+                LinkedList<DataRequest> curList = pendingMessages.get(fbid);
+
+                while (curList.size() > 0) {
+                  try {
+                    DataRequest curMessage = curList.peek();
+                    out.writeObject(curMessage);
+                    out.flush();
+
+                    System.out.println("Buffered send to " + fbid);
+
+                    curList.poll();
+                  } catch (Exception ex) {
+                    break;
+                  }
+                }
+              }
               break;
             }
             case DataRequest.MESSAGE: {
               MessageRequest msg = (MessageRequest)request;
               System.out.println("Seding message to " + msg.to);
 
-              if (connected.get(msg.to) == null) {
-                System.out.println("No one");
-              } else {
+              if (connected.get(msg.to) != null) {
                 ObjectOutputStream sout = connected.get(msg.to);
 
                 sout.writeObject(request);
                 sout.flush();
+              } else {
+                addToWaitQueue(msg, msg.to);
               }
 
               break;
@@ -104,13 +127,15 @@ public class Server extends Thread {
 
                   sout.writeObject(meeting);
                   sout.flush();
+                } else {
+                  addToWaitQueue(meeting, user);
                 }
               }
               break;
             }
           }
         } catch (IOException ex) {
-          System.out.println("asta e " + fbid);
+          System.out.println("Logout " + fbid);
           connected.remove(fbid);
 
           break;
