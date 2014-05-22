@@ -53,16 +53,13 @@ public class MainActivity extends Activity {
       // callback when session changes state
       @Override
       public void call(Session session, SessionState state, Exception exception) {
-        Log.d("mydebug", "aici1");
         if (session.isOpened()) {
           // make request to the /me API
-          Log.d("mydebug", "aici2");
           Request.newMeRequest(session, new Request.GraphUserCallback() {
 
             // callback after Graph API response with user object
             @Override
             public void onCompleted(GraphUser user, Response response) {
-              Log.d("mydebug", "aici");
               if (user != null) {
                 me = user;
 
@@ -96,7 +93,6 @@ public class MainActivity extends Activity {
 
       // start accepting and probing for devices
       final Bluetooth b = new Bluetooth(MainActivity.this);
-      
       b.accept(fbid);
 
       b.start();
@@ -115,8 +111,6 @@ public class MainActivity extends Activity {
         DataRequest request = new DataRequest(DataRequest.CONNECT, fbid);
         out.writeObject(request);
         out.flush();
-
-        Log.d("mydebug", "ok");
       } catch (Exception ex) {
         ex.printStackTrace();
       }
@@ -176,8 +170,6 @@ public class MainActivity extends Activity {
 
     public void onCompleted(List<GraphUser> users,
         Response response) {
-//      Backend.allFriends.put(fbid, me);
-
       // get all Facebook friends
       for (GraphUser u : users) {
         Backend.allFriends.put(u.getId(), u);
@@ -218,14 +210,6 @@ public class MainActivity extends Activity {
   }
 
   @Override
-  public void onSaveInstanceState(Bundle state) {
-    super.onSaveInstanceState(state);
-    
-    state.putString("fbid", fbid);
-//    state.putStringArray("friends", (String[])usersArray.toArray());
-  }
-
-  @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     getMenuInflater().inflate(R.menu.main, menu);
     return true;
@@ -234,7 +218,6 @@ public class MainActivity extends Activity {
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    // check this must do this
     Session.getActiveSession().onActivityResult(this, requestCode, resultCode, data);
   }
 

@@ -53,12 +53,6 @@ public class Bluetooth extends Thread {
           "not support Bluetooth", Toast.LENGTH_LONG).show();
       throw new ExceptionHandler("The device does not support Bluetooth");
     }
-
-    // Enable bluetooth
-    if (ba.isEnabled() == false) {
-      //			Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-      //			activity.startActivityForResult(intent, 1);
-    }
   }
 
   public void disableBluetooth(){
@@ -68,11 +62,6 @@ public class Bluetooth extends Thread {
   public Set<BluetoothDevice> getPairedDevices() {
     pairedDevices = ba.getBondedDevices();
 
-//    for (BluetoothDevice bd : pairedDevices){
-//      devices.add(bd);
-//      Log.d("mydebug", bd.getName());
-//    }
-
     return pairedDevices;
   }
 
@@ -80,17 +69,11 @@ public class Bluetooth extends Thread {
     @Override
     public void onReceive(Context context, Intent intent) {
       Log.d("mydebug", "received");
-      // TODO Auto-generated method stub
-      String a = intent.getAction(); // vezi ce face asta
-      // Discover a device
-      //			if(BluetoothDevice.ACTION_FOUND.equals(a)){
+      String a = intent.getAction();
       BluetoothDevice dev = intent.getParcelableExtra(
           BluetoothDevice.EXTRA_DEVICE);
-      //				devices.add(new DeviceInfo(dev.getName(), dev.getAddress()));
       devices.add(dev);
-      //			}
     }
-
   };
 
   public void unregister() {
@@ -123,11 +106,6 @@ public class Bluetooth extends Thread {
     private boolean isEnabled = false;
     public AcceptThread(String fbid) {
       this.fbid = fbid;
-//      try {
-//        Log.d("mydebug", "Accepta");
-//      } catch (IOException e) { 
-//        System.out.println(e.getStackTrace());
-//      }
     }
 
     public void run() {
@@ -140,14 +118,14 @@ public class Bluetooth extends Thread {
             Thread.sleep(5000);
           } else {
             if (isEnabled == false) {
+              // init a server socket
               isEnabled = true;
               mmServerSocket = ba.listenUsingRfcommWithServiceRecord("pdsdapp", uuid);
             }
           }
 
-          Log.d("mydebug", "Waiting");
           final BluetoothSocket socket = mmServerSocket.accept();
-          Log.d("mydebug", "Socket acceptat");
+          Log.d("mydebug", "Socket accepted");
 
           (new Thread() {
             public void run() {
@@ -180,7 +158,6 @@ public class Bluetooth extends Thread {
                     meeting.deleteEntry(user);
                   }
                 });
-                Log.d("mydebug", "deleting " + user);
               }
             } catch (Exception ex) {
               Log.d("mydebug", "could not connect to " + d.getName());

@@ -97,9 +97,7 @@ public class Meeting extends Activity {
   }
 
   public void deleteEntry(String fbid) {
-    Log.d("mydebug", "in meeting delete " + fbid);
     boolean ok = usersArray.remove(meetingUsers.get(fbid));
-    Log.d("mydebug", "ok " + ok);
 
     adapter.notifyDataSetChanged();
   }

@@ -77,8 +77,6 @@ public class Backend extends Thread {
         while (true) {
           DataRequest request = (DataRequest)in.readObject();
 
-          Log.d("mydebug", "cacat");
-          System.out.println("fuuu");
           switch (request.type) {
             case DataRequest.MEETING:
               Intent i = new Intent(activity, Meeting.class);
